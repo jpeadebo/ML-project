@@ -1,37 +1,22 @@
 import math
 import random
-import csv
-
-trainingData = 'C:\\Users\\andyd\\Downloads\\winequality-red.csv'
-# testingData = 'C:\\Users\\andyd\\Downloads\\testsData.txt'
-fileTrain = open(trainingData)
-# fileTest = open(testingData)
-
-csvreader = csv.reader(fileTrain)
-
-inputVariableNames = []
-inputVariableNames = next(csvreader)
-
-rows = []
-for row in csvreader:
-    rows.append(row)
-
-inputs = [[float() for y in x] for x in rows]
-
 
 def sigmoidFunction(z):
+    if z < 100:
+        z = 100
+    elif -100 < z:
+        z = -100
     S = 1 / (1 + math.pow(math.e, -z))
     return S
 
 
-outputScale = 10
+outputScale = 1
 learningRate = .1
 
 
 class Network:
 
     def __init__(self, frameWork):
-        self.expected = 0
         self.framework = frameWork
         self.numLayers = len(self.framework)
         self.layers = []
@@ -63,7 +48,7 @@ class Network:
 
     def printError(self):
         for i in self.outputLayer():
-            print(abs(i.getError()))
+            print(i.getError())
 
     def createFramework(self):
         for i in self.framework:
@@ -74,9 +59,8 @@ class Network:
             self.layers.append(layer)
 
     def setInputs(self, inputs):
-        for i in range(len(self.layers[0])):
+        for i in range(len(inputs)):
             self.layers[0][i].setValue(inputs[i])
-        self.expected = inputs[len(inputs) - 1]
 
     def setWeightsRandom(self):
         for i in range(len(self.layers)):
@@ -101,10 +85,10 @@ class Network:
 
     # end of network setup
     # start of backprop
-    def calcError(self):
+    def calcError(self, target):
         prevLayer = self.outputLayer()
         for i in prevLayer:
-            i.setError(self.expected - i.getValue() * 10)
+            i.setError(target - i.getValue())
         # layers[1:-1] means remove input and output layers from being changed
         for j in reversed(self.layers[1:-1]):
             for i in range(len(j)):
@@ -141,6 +125,23 @@ class Network:
         for i in range(len(dArrayWeights)):
             for j in range(len(dArrayWeights[i])):
                 self.layers[i + 1][j].updateWeights(dArrayWeights[i][j])
+
+    def train(self, inputs):
+        for input in inputs:
+            if len(input) != 0:
+                self.setInputs(input[:-1])
+                target = input[len(input)-1]
+                self.calcOutputs()
+                print(target, self.outputLayer()[0].getValue())
+                self.calcError(target)
+                self.applyDeltaWeights()
+
+    def test(self, inputs):
+        for input in inputs:
+            if len(input) != 0:
+                self.setInputs(input[:-1])
+                self.calcOutputs()
+                self.printError()
 
 
 class Neuron:
@@ -189,21 +190,3 @@ class Neuron:
             summation += self.getWeights()[i] * prevLayerValues[i]
         z = summation + self.getBias()
         self.setValue(sigmoidFunction(z))
-
-
-hiddenLayer1Length = 8
-hiddenLayer2Length = 4
-numOutputs = 1
-
-n = Network([len(inputVariableNames), hiddenLayer1Length, hiddenLayer2Length, numOutputs])
-
-for i in inputs:
-    if (len(i) != 0):
-        n.setInputs(i)
-        n.calcOutputs()
-        n.printError()
-        n.calcError()
-        n.applyDeltaWeights()
-
-
-

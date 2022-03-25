@@ -2,8 +2,8 @@ import math
 import random
 import csv
 
-trainingData = 'C:\\Users\\andyd\\Downloads\\winequality-red.csv'
-testingData = 'C:\\Users\\andyd\\Downloads\\testsData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
+testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
 
@@ -212,8 +212,8 @@ class Neuron:
         self.setValue(sigmoidFunction(z))
 
 
-hiddenLayer1Length = 100
-hiddenLayer2Length = 50
+hiddenLayer1Length = 20
+hiddenLayer2Length = 10
 numOutputs = 1
 
 n = Network([len(inputVariableNames), hiddenLayer1Length, hiddenLayer2Length, numOutputs])

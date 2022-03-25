@@ -57,6 +57,8 @@ def understandData(inputs):
         dataSet.append(natCon[input[13]])
         dataSet.append(aboveBelow[input[14]])
         understoodData.append(dataSet)
+
+    understoodData = [[float(y) for y in x] for x in understoodData]
     return understoodData
 
 
@@ -70,7 +72,7 @@ hiddenLayer1Length = 20
 hiddenLayer2Length = 10
 numOutputs = 1
 
-framework = [len(rows[0])-2, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+framework = [len(rows[0])-1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
 network = network.Network(framework)
 
 network.train(rows)

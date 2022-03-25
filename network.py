@@ -2,6 +2,11 @@ import math
 import random
 
 def sigmoidFunction(z):
+    if z < 100:
+        z = 100
+    elif -100 < z:
+        z = -100
+    print(z)
     S = 1 / (1 + math.pow(math.e, -z))
     return S
 

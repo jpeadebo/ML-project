@@ -1,29 +1,5 @@
 import math
 import random
-import csv
-
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
-fileTrain = open(trainingData)
-fileTest = open(testingData)
-
-csvreader = csv.reader(fileTrain)
-
-inputVariableNames = next(csvreader)
-
-rows = []
-for row in csvreader:
-    rows.append(row)
-
-inputData = [[float() for y in x] for x in rows]
-
-csvreader = csv.reader(fileTest)
-
-for row in csvreader:
-    rows.append(row)
-
-testData = [[float() for y in x] for x in rows]
-
 
 def sigmoidFunction(z):
     S = 1 / (1 + math.pow(math.e, -z))
@@ -210,15 +186,3 @@ class Neuron:
             summation += self.getWeights()[i] * prevLayerValues[i]
         z = summation + self.getBias()
         self.setValue(sigmoidFunction(z))
-
-
-hiddenLayer1Length = 20
-hiddenLayer2Length = 10
-numOutputs = 1
-
-n = Network([len(inputVariableNames), hiddenLayer1Length, hiddenLayer2Length, numOutputs])
-n.train(inputData)
-print("\n")
-n.test(testData)
-
-

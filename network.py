@@ -16,7 +16,7 @@ rows = []
 for row in csvreader:
     rows.append(row)
 
-inputs = [[float(y) for y in x] for x in rows]
+inputs = [[float() for y in x] for x in rows]
 
 
 def sigmoidFunction(z):

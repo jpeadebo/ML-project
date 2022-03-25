@@ -4,7 +4,6 @@ class Matrix:
         self.setMatrix(list2D)
 
     def setMatrix(self, newMatrix):
-        print(len(newMatrix))
         self.matrix = newMatrix
         self.colSize = len(newMatrix[0])
         self.rowSize = len(newMatrix)
@@ -21,22 +20,22 @@ class Matrix:
 
     def printMatrix(self):
         for i in self.matrix:
-            print(i);
+            print(i)
 
     def setElement(self, pos, value):
         self.matrix[pos[0]][pos[1]] = value
 
     def at(self, pos):
-        return self.matrix[pos[1]][pos[0]]
-
-    def getCol(self, colPos):
-        return self.matrix[colPos]
+        return self.matrix[pos[0]][pos[1]]
 
     def getRow(self, rowPos):
-        row = []
+        return self.matrix[rowPos]
+
+    def getCol(self, colPos):
+        col = []
         for i in self.matrix:
-            row.append(i[rowPos])
-        return row
+            col.append(i[colPos])
+        return col
 
     def getColSize(self):
         return self.colSize
@@ -49,64 +48,50 @@ class Matrix:
 
     def add(self, matrix2):
         if self.colSize == matrix2.getColSize() and self.rowSize == matrix2.getRowSize():
-            for j in range(len(self.matrix)):
-                for i in range(len(self.matrix[i])):
-                    self.addElement([i, j], matrix2.at([i, j]))
+            for r in range(len(self.matrix)):
+                for c in range(len(self.matrix[r])):
+                    self.addElement([r,c], matrix2.at([r,c]))
 
     def subtract(self, matrix2):
         if self.colSize == matrix2.getColSize() and self.rowSize == matrix2.getRowSize():
-            for j in range(len(self.matrix)):
-                for i in range(len(self.matrix[i])):
-                    self.addElement([i, j], -matrix2.at([i, j]))
+            for r in range(len(self.matrix)):
+                for c in range(len(self.matrix[r])):
+                    self.addElement([r, c], -matrix2.at([r, c]))
 
     def multiply(self, matrix2):
-        nMatrix = [[]]
         if self.colSize == matrix2.getRowSize():
             colSizeN = matrix2.getColSize()
             rowSizeN = self.rowSize
-            matrix = [[0 for x in range(rowSizeN)] for y in range(colSizeN)]
-            for j in range(colSizeN):
-                for i in range(rowSizeN):
+            matrix = [[0 for x in range(colSizeN)] for y in range(rowSizeN)]
+            for r in range(rowSizeN):
+                for c in range(colSizeN):
                     # add together the multiplications of the col and row
                     sum = 0
-                    for k in range(len(matrix2.getCol(i))):
-                        sum += matrix2.getCol(i)[k] * self.getRow(j)[k]
-                    matrix[i][j] = sum
+                    for k in range(len(matrix2.getCol(c))):
+                        sum += matrix2.getCol(c)[k] * self.getRow(r)[k]
+                    matrix[r][c] = sum
             self.setMatrix(matrix)
 
         elif self.rowSize == matrix2.getColSize():
             colSizeN = self.colSize
             rowSizeN = matrix2.getRowSize()
-            matrix = [[0 for x in range(rowSizeN)] for y in range(colSizeN)]
-            for j in range(colSizeN):
-                for i in range(rowSizeN):
+            matrix = [[0 for x in range(colSizeN)] for y in range(rowSizeN)]
+            for r in range(rowSizeN):
+                for c in range(colSizeN):
                     # add together the multiplications of the col and row
                     sum = 0
-                    for k in range(len(matrix2.getRow(i))):
-                        sum += matrix2.getRow(i)[k] * self.getCol(j)[k]
-                    matrix[i][j] = sum
+                    for k in range(len(matrix2.getRow(r))):
+                        sum += matrix2.getRow(r)[k] * self.getCol(c)[k]
+                    matrix[r][c] = sum
             self.setMatrix(matrix)
         elif matrix2.getColSize() == 1 and matrix2.getRowSize() == 1:
-            for j in range(len(self.matrix)):
-                for i in range(len(self.matrix[i])):
-                    self.setElement([i, j], self.at([i, j]) * matrix2.at([0, 0]))
+            for r in range(len(self.matrix)):
+                for c in range(len(self.matrix[r])):
+                    self.setElement([r, c], self.at([r, c]) * matrix2.at([r, c]))
 
     def transpose(self):
-        matrixN = [[0 for x in range(self.colSize)] for y in range(self.rowSize)]
-        for j in range(len(self.matrix)):
-            for i in range(len(self.matrix[j])):
-                matrixN[j][i] = self.at([i, j])
+        matrixN = [[0 for x in range(self.rowSize)] for y in range(self.colSize)]
+        for r in range(len(self.matrix)):
+            for c in range(len(self.matrix[r])):
+                matrixN[c][r] = self.at([r, c])
         self.setMatrix(matrixN)
-
-
-vector = [2, 3, 4]
-vector2 = [[2, 3, 4]]
-matrix = [[1, 1, 1, 2]]
-m = Matrix(matrix)
-v = Matrix(vector2)
-v.transpose()
-m.vector(vector)
-m.add(v)
-m.printMatrix()
-
-

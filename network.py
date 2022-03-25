@@ -6,12 +6,11 @@ def sigmoidFunction(z):
         z = 100
     elif -100 < z:
         z = -100
-    print(z)
     S = 1 / (1 + math.pow(math.e, -z))
     return S
 
 
-outputScale = 10
+outputScale = 1
 learningRate = .1
 
 
@@ -49,7 +48,7 @@ class Network:
 
     def printError(self):
         for i in self.outputLayer():
-            print(abs(i.getError()))
+            print(i.getError())
 
     def createFramework(self):
         for i in self.framework:
@@ -89,7 +88,7 @@ class Network:
     def calcError(self, target):
         prevLayer = self.outputLayer()
         for i in prevLayer:
-            i.setError(target - i.getValue() * 10)
+            i.setError(target - i.getValue())
         # layers[1:-1] means remove input and output layers from being changed
         for j in reversed(self.layers[1:-1]):
             for i in range(len(j)):
@@ -133,7 +132,7 @@ class Network:
                 self.setInputs(input[:-1])
                 target = input[len(input)-1]
                 self.calcOutputs()
-                self.printError()
+                print(target, self.outputLayer()[0].getValue())
                 self.calcError(target)
                 self.applyDeltaWeights()
 

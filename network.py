@@ -49,9 +49,11 @@ def makeValueMatrix(framework):
 class Network:
 
     def __init__(self, framework):
+        self.framework = framework
         self.layerMatrix = makeWeights(framework)
         self.valueMatrix = makeValueMatrix(framework)
-        self.expected = 0
+        self.biasMatrix = makeValueMatrix(framework)
+        self.expected = [0.0, 0.0]
 
     def setInput(self, input):
         if len(input[:-1]) == self.valueMatrix.getColSize():
@@ -61,9 +63,27 @@ class Network:
     def feedForward(self):
         for layer in range(len(self.layerMatrix)):
             vector = Matrix(self.valueMatrix.getRow(layer))
+            bias = Matrix(self.biasMatrix.getRow(layer))
             wMatrix = self.layerMatrix[layer]
             vector.multiply(wMatrix)
+            vector.add(bias)
             self.valueMatrix.setRow(layer + 1, sigmoidLayer(vector.matrix))
+
+    def errorSquared(self):
+        errorMatrix = makeValueMatrix(self.framework)
+        prevError = self.expected
+        for r in range(len(errorMatrix.matrix), 0, -1):
+            length = len(errorMatrix.getRow(r - 1))
+            error = []
+            if r == len(errorMatrix.matrix):
+                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 1) for i in range(length)]
+            else:
+                weightMatrix = self.layerMatrix[r - 1]
+                weightMatrix.transpose()
+                error = weightMatrix.dotProduct(prevError)
+            errorMatrix.setRow(r - 1, error)
+            prevError = error
+        errorMatrix.printMatrix()
 
 
 inputLength = 5
@@ -72,5 +92,6 @@ outputLength = 2
 
 framework = [inputLength, hiddenLayer1Length, outputLength]
 net = Network(framework)
-net.setInput([1, 1, 1, 1, 1, 4])
+net.setInput([1, 1, 1, 1, 1, [4, 4]])
 net.feedForward()
+net.errorSquared()

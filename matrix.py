@@ -5,6 +5,7 @@ def transpose(list):
             matrixN[r][c] = list[r]
     return matrixN
 
+
 class Matrix:
 
     def __init__(self, mat):
@@ -51,7 +52,7 @@ class Matrix:
         if self.getColSize() == matrix2.getColSize() and self.getRowSize() == matrix2.getRowSize():
             for r in range(len(self.matrix)):
                 for c in range(len(self.matrix[r])):
-                    self.addElement([r,c], matrix2.at([r,c]))
+                    self.addElement([r, c], matrix2.at([r, c]))
 
     def subtract(self, matrix2):
         if self.getColSize() == matrix2.getColSize() and self.getRowSize() == matrix2.getRowSize():
@@ -66,16 +67,19 @@ class Matrix:
             print("element wise vector vector mult")
             sum = 0
             for r in range(len(self.matrix)):
-                sum += self.at([r, 0]) * vector2.at([r,0])
+                sum += self.at([r, 0]) * vector2.at([r, 0])
             return sum
         elif self.getRowSize() == vector2.getColSize() and self.getColSize() == 1 and vector2.getRowSize() == 1:
             print("vector * vector transpose")
-            mat = [[(self.at([r, 0]) * vector2.at([0,c])) for c in range(self.getRowSize())] for r in range(vector2.getColSize())]
+            mat = [[(self.at([r, 0]) * vector2.at([0, c])) for c in range(self.getRowSize())] for r in
+                   range(vector2.getColSize())]
             return mat
         else:
             print("bruh enter the right shit into vector vector mult")
 
     def dotProduct(self, matrix2):
+        if not isinstance(matrix2, Matrix):
+            matrix2 = Matrix(matrix2)
         # take a layer
         dVector = []
         if matrix2.getColSize() > 1:
@@ -87,6 +91,8 @@ class Matrix:
         return dVector
 
     def multiply(self, matrix2):
+        if not isinstance(matrix2, Matrix):
+            matrix2 = Matrix(matrix2)
         if self.getColSize() == matrix2.getRowSize():
             colSizeN = matrix2.getColSize()
             rowSizeN = self.getRowSize()
@@ -115,6 +121,7 @@ class Matrix:
 
         else:
             print("bruh put the right shit into multiply")
+
     def transpose(self):
         matrixN = [[0 for x in range(self.getRowSize())] for y in range(self.getColSize())]
         for r in range(len(self.matrix)):

@@ -8,6 +8,9 @@ def transpose(list):
 class Matrix:
 
     def __init__(self, mat):
+        if not isinstance(mat[0], list):
+            matrix = [mat]
+            mat = matrix
         # [row][col]
         self.matrix = mat
         if self.getRowSize() == 1:
@@ -25,6 +28,9 @@ class Matrix:
     def setMatrix(self, mat):
         self.matrix = mat
 
+    def setRow(self, pos, row):
+        self.matrix[pos] = row
+
     def getRow(self, row):
         return self.matrix[row]
 
@@ -32,14 +38,11 @@ class Matrix:
         return len(self.matrix)
 
     def getCol(self, col):
-        list = []
-        for r in self.matrix:
-            if len(r) > col:
-                list.append(r[col])
+        list = [row[col] for row in self.matrix]
         return transpose(list)
 
     def getColSize(self):
-        return len(self.getRow(0))
+        return len(self.getRow(0)) if isinstance(self.getRow(0), list) else 1
 
     def addElement(self, pos, value):
         self.matrix[pos[0]][pos[1]] += value
@@ -85,7 +88,6 @@ class Matrix:
 
     def multiply(self, matrix2):
         if self.getColSize() == matrix2.getRowSize():
-            print("here")
             colSizeN = matrix2.getColSize()
             rowSizeN = self.getRowSize()
             matrix = [[0 for x in range(colSizeN)] for y in range(rowSizeN)]
@@ -108,7 +110,6 @@ class Matrix:
                     sum = 0
                     for k in range(len(matrix2.getRow(r))):
                         sum += matrix2.getRow(r)[k] * self.getCol(c)[k][0]
-                    print(sum)
                     matrix[r][c] = sum
             self.setMatrix(matrix)
 
@@ -120,12 +121,3 @@ class Matrix:
             for c in range(len(self.matrix[r])):
                 matrixN[c][r] = self.at([r, c])
         self.setMatrix(matrixN)
-
-
-# [row] [col]
-m = [[2,3,2,2], [1,1,1,1]]
-v = [[3,3,3,9],[1,2,7,2]]
-matrix = Matrix(m)
-vector = Matrix(v)
-matrix.add(vector)
-matrix.printMatrix()

@@ -4,10 +4,17 @@ import random
 from matrix import Matrix
 
 
+def sigmoidLayer(layer):
+    vector = []
+    for i in layer:
+        vector.append(sigmoidFunction(i[0]))
+    return vector
+
+
 def sigmoidFunction(z):
-    if z < 100:
+    if 0 < z < 100:
         z = 100
-    elif -100 < z:
+    elif -100 < z < 0:
         z = -100
     S = 1 / (1 + math.pow(math.e, -z))
     return S
@@ -23,8 +30,7 @@ def makeWeights(framework):
     # for each layer in the framework excluding the input layer
     layerMatrix = []
     for L in framework[1:]:
-        matrix = Matrix()
-        matrix.setMatrix([[random.uniform(-1, 1) for r in range(prevLayerLen)] for c in range(L)])
+        matrix = Matrix([[random.uniform(-1, 1) for r in range(prevLayerLen)] for c in range(L)])
         layerMatrix.append(matrix)
         prevLayerLen = L
     return layerMatrix
@@ -36,8 +42,7 @@ def makeValueMatrix(framework):
     for L in framework:
         vector = [0 for r in range(L)]
         valueMatrix.append(vector)
-    vMatrix = Matrix()
-    vMatrix.setMatrix(valueMatrix)
+    vMatrix = Matrix(valueMatrix)
     return vMatrix
 
 
@@ -46,16 +51,19 @@ class Network:
     def __init__(self, framework):
         self.layerMatrix = makeWeights(framework)
         self.valueMatrix = makeValueMatrix(framework)
-        self.feedForward()
-        self.valueMatrix.printMatrix()
+        self.expected = 0
+
+    def setInput(self, input):
+        if len(input[:-1]) == self.valueMatrix.getColSize():
+            self.valueMatrix.setRow(0, input[:-1])
+            self.expected = input[len(input) - 1]
 
     def feedForward(self):
         for layer in range(len(self.layerMatrix)):
-            vector = Matrix()
-            valueVector = self.valueMatrix.getRow(layer)
-            vector.vector(valueVector)
-            vector.multiply(self.layerMatrix[layer])
-            self.valueMatrix.setRow(layer + 1, vector.getRow(0))
+            vector = Matrix(self.valueMatrix.getRow(layer))
+            wMatrix = self.layerMatrix[layer]
+            vector.multiply(wMatrix)
+            self.valueMatrix.setRow(layer + 1, sigmoidLayer(vector.matrix))
 
 
 inputLength = 5
@@ -64,3 +72,5 @@ outputLength = 2
 
 framework = [inputLength, hiddenLayer1Length, outputLength]
 net = Network(framework)
+net.setInput([1, 1, 1, 1, 1, 4])
+net.feedForward()

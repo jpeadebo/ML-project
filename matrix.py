@@ -63,11 +63,12 @@ class Matrix:
     def vectorVectorTranspose(self, vector2):
         if self.getColSize() == 1 or vector2.getRowSize() == 1:
 
-            mat = Matrix([[(self.at([r,0]) * vector2.at([0,c])) for c in range(vector2.getColSize())] for r in range(self.getRowSize())])
+            mat = Matrix([[(self.at([r, 0]) * vector2.at([0, c])) for c in range(vector2.getColSize())] for r in
+                          range(self.getRowSize())])
             return mat
         elif self.getRowSize() == 1 or vector2.getColSize() == 1:
             mat = Matrix([[(self.at([0, c] * vector2.at([r, 0]))) for c in range(self.getColSize())] for r in
-                   range(vector2.getRowSize())])
+                          range(vector2.getRowSize())])
             return mat
 
     def vectorVectorMult(self, vector2):
@@ -163,6 +164,6 @@ class Matrix:
         for r in range(len(self.matrix)):
             vec = []
             for c in range(len(self.matrix[r])):
-                vec.append(scale * self.at([r,c]))
+                vec.append(scale * self.at([r, c]))
             mat.append(vec)
         return mat

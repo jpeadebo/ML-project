@@ -3,6 +3,8 @@ import random
 
 from matrix import Matrix
 
+sign = lambda a: float((a > 0) - (a < 0))
+
 
 def sigmoidLayer(layer):
     vector = []
@@ -12,11 +14,11 @@ def sigmoidLayer(layer):
 
 
 def sigmoidFunction(z):
-    if 0 < z < 100:
-        z = 100
-    elif -100 < z < 0:
-        z = -100
-    S = 1 / (1 + math.pow(math.e, -z))
+    maxSigInput = 10
+    if -maxSigInput < z < maxSigInput:
+        S = 1 / (1 + math.pow(math.e, -z))
+    else:
+        S = sign(z)
     return S
 
 
@@ -76,22 +78,23 @@ class Network:
         for r in range(len(errorMatrix.matrix), 0, -1):
             length = len(errorMatrix.getRow(r - 1))
             if r == len(errorMatrix.matrix):
-                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 2) for i in range(length)]
+                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 2) for i in range(length)] if isinstance(prevError, list) else math.pow(self.valueMatrix.at([r - 1, 0]) - prevError, 2)
             else:
                 weightMatrix = self.layerMatrix[r - 1]
                 weightMatrix.transpose()
-                error = weightMatrix.dotProduct(prevError)
+                print(prevError, "prev")
+                error = weightMatrix.scale(prevError) if isinstance(prevError, float) else weightMatrix.dotProduct(prevError)
             errorMatrix.setRow(r - 1, error)
             prevError = error
-        self.errors.append(errorMatrix.getRow(errorMatrix.getRowSize()-1))
-        errorMatrix.scale(learningRate)
+        self.errors.append(errorMatrix.getRow(errorMatrix.getRowSize() - 1))
         return self.deltaWeight(errorMatrix)
 
     def deltaWeight(self, errorMatrix):
         dWeightMatrix = makeWeights(self.framework)
         for r in range(1, len(dWeightMatrix)):
-            errorRow = Matrix(errorMatrix.getRow(r))
-            valueRow = Matrix(self.valueMatrix.getRow(r-1))
+            errorRow = Matrix(errorMatrix.getRow(r)).scale(learningRate)
+            errorRow = Matrix(errorRow)
+            valueRow = Matrix(self.valueMatrix.getRow(r - 1))
             sigmoidInverse = self.valueMatrix.sigmoidInverse(r)
             elementWise = Matrix(errorRow.multiply(sigmoidInverse))
             valueRow.transpose()
@@ -111,12 +114,3 @@ class Network:
             print("feedForwardDone")
             self.updateWeights(self.errorSquared())
         print(self.errors)
-
-inputLength = 5
-hiddenLayer1Length = 4
-outputLength = 2
-
-framework = [inputLength, hiddenLayer1Length, outputLength]
-net = Network(framework)
-net.train([[1, 1, 1, 1, 1, [4, 4]]])
-

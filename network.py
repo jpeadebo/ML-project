@@ -49,6 +49,7 @@ def makeValueMatrix(framework):
 class Network:
 
     def __init__(self, framework):
+        self.errors = []
         self.framework = framework
         self.layerMatrix = makeWeights(framework)
         self.valueMatrix = makeValueMatrix(framework)
@@ -74,17 +75,42 @@ class Network:
         prevError = self.expected
         for r in range(len(errorMatrix.matrix), 0, -1):
             length = len(errorMatrix.getRow(r - 1))
-            error = []
             if r == len(errorMatrix.matrix):
-                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 1) for i in range(length)]
+                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 2) for i in range(length)]
             else:
                 weightMatrix = self.layerMatrix[r - 1]
                 weightMatrix.transpose()
                 error = weightMatrix.dotProduct(prevError)
             errorMatrix.setRow(r - 1, error)
             prevError = error
-        errorMatrix.printMatrix()
+        self.errors.append(errorMatrix.getRow(errorMatrix.getRowSize()-1))
+        errorMatrix.scale(learningRate)
+        return self.deltaWeight(errorMatrix)
 
+    def deltaWeight(self, errorMatrix):
+        dWeightMatrix = makeWeights(self.framework)
+        for r in range(1, len(dWeightMatrix)):
+            errorRow = Matrix(errorMatrix.getRow(r))
+            valueRow = Matrix(self.valueMatrix.getRow(r-1))
+            sigmoidInverse = self.valueMatrix.sigmoidInverse(r)
+            elementWise = Matrix(errorRow.multiply(sigmoidInverse))
+            valueRow.transpose()
+            print(elementWise.matrix, valueRow.matrix, "element value")
+            deltaWeights = elementWise.vectorVectorTranspose(valueRow)
+            dWeightMatrix[r] = deltaWeights
+        return dWeightMatrix
+
+    def updateWeights(self, dWeightMatrix):
+        for l in range(len(dWeightMatrix)):
+            self.layerMatrix[l].subtract(dWeightMatrix[l])
+
+    def train(self, inputs):
+        for i in inputs:
+            self.setInput(i)
+            self.feedForward()
+            print("feedForwardDone")
+            self.updateWeights(self.errorSquared())
+        print(self.errors)
 
 inputLength = 5
 hiddenLayer1Length = 4
@@ -92,6 +118,5 @@ outputLength = 2
 
 framework = [inputLength, hiddenLayer1Length, outputLength]
 net = Network(framework)
-net.setInput([1, 1, 1, 1, 1, [4, 4]])
-net.feedForward()
-net.errorSquared()
+net.train([[1, 1, 1, 1, 1, [4, 4]]])
+

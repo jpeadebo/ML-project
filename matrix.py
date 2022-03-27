@@ -60,9 +60,20 @@ class Matrix:
                 for c in range(len(self.matrix[r])):
                     self.addElement([r, c], -matrix2.at([r, c]))
 
+    def vectorVectorTranspose(self, vector2):
+        if self.getColSize() == 1 or vector2.getRowSize() == 1:
+
+            mat = Matrix([[(self.at([r,0]) * vector2.at([0,c])) for c in range(vector2.getColSize())] for r in range(self.getRowSize())])
+            return mat
+        elif self.getRowSize() == 1 or vector2.getColSize() == 1:
+            mat = Matrix([[(self.at([0, c] * vector2.at([r, 0]))) for c in range(self.getColSize())] for r in
+                   range(vector2.getRowSize())])
+            return mat
+
     def vectorVectorMult(self, vector2):
         if isinstance(vector2, list):
             vector2 = Matrix(vector2)
+
         if self.getRowSize() == vector2.getRowSize() and self.getColSize() == 1 and vector2.getColSize() == 1:
             print("element wise vector vector mult")
             sum = 0
@@ -82,18 +93,30 @@ class Matrix:
             matrix2 = Matrix(matrix2)
         # take a layer
         dVector = []
-        if matrix2.getColSize() > 1:
+        if self.getColSize() == 1 and matrix2.getColSize() == 1 and self.getRowSize() == matrix2.getRowSize():
+            for i in range(len(self.matrix)):
+                dVector.append(self.matrix[i][0] * matrix2[i][0])
+        elif matrix2.getColSize() > 1:
             for r in matrix2.matrix:
                 dVector.append(self.vectorVectorMult(transpose(r)))
         elif self.getColSize() > 1:
             for r in self.matrix:
                 dVector.append(matrix2.vectorVectorMult(transpose(r)))
+
         return dVector
 
     def multiply(self, matrix2):
-        if not isinstance(matrix2, Matrix):
+        if not isinstance(matrix2, Matrix) and not isinstance(matrix2, float):
             matrix2 = Matrix(matrix2)
-        if self.getColSize() == matrix2.getRowSize():
+
+        if self.getRowSize() == matrix2.getRowSize() and self.getColSize() == 1 and matrix2.getColSize() == 1:
+            print("element wise vector vector mult")
+            sum = []
+            for r in range(len(self.matrix)):
+                sum.append(self.at([r, 0]) * matrix2.at([r, 0]))
+
+            return sum
+        elif self.getColSize() == matrix2.getRowSize():
             colSizeN = matrix2.getColSize()
             rowSizeN = self.getRowSize()
             matrix = [[0 for x in range(colSizeN)] for y in range(rowSizeN)]
@@ -128,3 +151,18 @@ class Matrix:
             for c in range(len(self.matrix[r])):
                 matrixN[c][r] = self.at([r, c])
         self.setMatrix(matrixN)
+
+    def sigmoidInverse(self, row):
+        vect = Matrix(self.getRow(row))
+        oneVect = Matrix([1 for i in range(vect.getRowSize())])
+        oneVect.subtract(vect)
+        return vect.multiply(oneVect)
+
+    def scale(self, scale):
+        mat = []
+        for r in range(len(self.matrix)):
+            vec = []
+            for c in range(len(self.matrix[r])):
+                vec.append(scale * self.at([r,c]))
+            mat.append(vec)
+        return mat

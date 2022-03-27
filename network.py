@@ -1,16 +1,17 @@
 import math
 import random
 
+
 def sigmoidFunction(z):
-    if z < 100:
+    if 100 < z < math.inf:
         z = 100
-    elif -100 < z:
+    elif -math.inf < z < -100:
         z = -100
     S = 1 / (1 + math.pow(math.e, -z))
     return S
 
 
-outputScale = 1
+outputScale = 2
 learningRate = .1
 
 
@@ -88,7 +89,7 @@ class Network:
     def calcError(self, target):
         prevLayer = self.outputLayer()
         for i in prevLayer:
-            i.setError(target - i.getValue())
+            i.setError(math.pow(target - i.getValue(), 2))
         # layers[1:-1] means remove input and output layers from being changed
         for j in reversed(self.layers[1:-1]):
             for i in range(len(j)):
@@ -126,12 +127,17 @@ class Network:
             for j in range(len(dArrayWeights[i])):
                 self.layers[i + 1][j].updateWeights(dArrayWeights[i][j])
 
+    def scaleOutputs(self, scale):
+        for i in self.outputLayer():
+            i.scaleValue(scale)
+
     def train(self, inputs):
         for input in inputs:
             if len(input) != 0:
                 self.setInputs(input[:-1])
-                target = input[len(input)-1]
+                target = input[len(input) - 1]
                 self.calcOutputs()
+                self.scaleOutputs(outputScale)
                 print(target, self.outputLayer()[0].getValue())
                 self.calcError(target)
                 self.applyDeltaWeights()
@@ -152,6 +158,9 @@ class Neuron:
         self.value = 0
         self.bias = 0
         self.error = 0
+
+    def scaleValue(self, scale):
+        self.value *= scale
 
     def getWeights(self):
         return self.weights

@@ -1,7 +1,7 @@
 import network
 import csv
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTrainingData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
 testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTestingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
@@ -68,11 +68,11 @@ rows = []
 for row in csvreader:
     rows.append(row)
 
-#rows = understandData(rows)
-rows = [[float(y) for y in x] for x in rows]
+rows = understandData(rows)
+#rows = [[float(y) for y in x] for x in rows]
 
 hiddenLayer1Length = 20
-hiddenLayer2Length = 1
+hiddenLayer2Length = 10
 numOutputs = 1
 
 framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]

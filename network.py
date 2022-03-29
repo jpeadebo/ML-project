@@ -1,7 +1,8 @@
 import math
 import numpy as np
+import matplotlib as plt
+import seaborn as sns
 import random
-
 
 def sigmoidLayer(layer):
     vector = []
@@ -23,7 +24,7 @@ def sigmoidFunction(z):
 
 
 outputScale = 1
-learningRate = .1
+learningRate = .01
 
 
 def sigmoidInverse(layer):
@@ -40,6 +41,10 @@ class Network:
         self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
         self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
 
+    def displayAllData(self):
+
+        print(WM)
+
     def setInputs(self, inputs):
         if len(inputs[:-1]) == len(self.valueMatrix[0]):
             self.valueMatrix[0] = np.array(inputs[:-1])
@@ -55,7 +60,7 @@ class Network:
     def calcError(self):
         for layer in range(len(self.valueMatrix), 0, -1):
             if layer == len(self.valueMatrix):
-                self.outputerror = [(self.valueMatrix[layer - 1][0] * outputScale) - self.expected]
+                self.outputerror = [self.expected - (self.valueMatrix[layer - 1][0] * outputScale)]
                 self.errorMatrix[layer - 1] = np.power(self.outputerror, 1)
             else:
                 self.errorMatrix[layer - 1] = np.dot(self.errorMatrix[layer], self.layerWeightMatrix[layer - 1])
@@ -82,6 +87,7 @@ class Network:
 
     def train(self, inputs):
         for input in inputs:
+            self.displayAllData()
             #print("_____________________________NEW____________________________")
             self.setInputs(input)
             self.feedForward()
@@ -137,7 +143,7 @@ class Network:
         eV = []
 
         for o in range(len(error[len(error)-1])):
-            eV.append((value[len(error)-1][o] * outputScale) - self.expected)
+            eV.append(self.expected - (value[len(error)-1][o] * outputScale))
         cError.append(eV)
 
         for r in range(len(value[:-1]),0,-1):

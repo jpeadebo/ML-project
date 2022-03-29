@@ -22,7 +22,7 @@ def sigmoidFunction(z):
     return S
 
 
-outputScale = 2
+outputScale = 1
 learningRate = .1
 
 
@@ -45,7 +45,7 @@ class Network:
             self.valueMatrix[0] = np.array(inputs[:-1])
             self.expected = np.array(inputs[len(inputs) - 1])
         else:
-            print("failed to set inputs")
+            raise Exception("failed to set inputs", inputs)
 
     # feed forward works
     def feedForward(self):
@@ -55,7 +55,7 @@ class Network:
     def calcError(self):
         for layer in range(len(self.valueMatrix), 0, -1):
             if layer == len(self.valueMatrix):
-                self.outputerror = [self.expected - (self.valueMatrix[layer - 1][0] * outputScale)]
+                self.outputerror = [(self.valueMatrix[layer - 1][0] * outputScale) - self.expected]
                 self.errorMatrix[layer - 1] = np.power(self.outputerror, 1)
             else:
                 self.errorMatrix[layer - 1] = np.dot(self.errorMatrix[layer], self.layerWeightMatrix[layer - 1])
@@ -81,15 +81,15 @@ class Network:
             print("bad update weight")
 
     def train(self, inputs):
-        #for input in inputs:
-        print("_____________________________NEW____________________________")
-        self.setInputs(inputs)
-        self.feedForward()
-        self.checkFeedForward()
-        self.calcError()
-        self.checkError()
-        # self.gradient()
-        # print(abs(self.outputerror[0]), self.expected)
+        for input in inputs:
+            #print("_____________________________NEW____________________________")
+            self.setInputs(input)
+            self.feedForward()
+            self.checkFeedForward()
+            self.calcError()
+            self.checkError()
+            self.gradient()
+            print(abs(self.outputerror[0]), self.valueMatrix[len(self.valueMatrix)-1])
 
     def test(self, inputs):
         self.setInputs(inputs)
@@ -137,7 +137,7 @@ class Network:
         eV = []
 
         for o in range(len(error[len(error)-1])):
-            eV.append(self.expected - (value[len(error)-1][o] * outputScale))
+            eV.append((value[len(error)-1][o] * outputScale) - self.expected)
         cError.append(eV)
 
         for r in range(len(value[:-1]),0,-1):
@@ -150,7 +150,6 @@ class Network:
             cError.append(rV)
 
         cError.reverse()
-        print(cError, "||", error, "cerror, error")
 
         # compare cError and error
         toleranceE = .25
@@ -162,11 +161,3 @@ class Network:
                     print(layerWeight, "layer Weight")
                     raise Exception("error Didnt work at r, c", r, c, cError[r][c], error[r][c])
 
-
-input = [[1, 1, 0], [1, 0, 1], [0, 1, 1], [0, 0, 0]]
-framework = [2, 5, 3, 1]
-n = Network(framework)
-
-for i in range(1000):
-    ran = random.randint(0, 3)
-    n.train(input[ran])

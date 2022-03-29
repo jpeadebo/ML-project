@@ -1,7 +1,7 @@
 import network
 import csv
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTrainingData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
 testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTestingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
@@ -68,10 +68,7 @@ rows = []
 for row in csvreader:
     rows.append(row)
 
-rows = [[float(y) for y in x] for x in rows]
-
-
-# rows = understandData(rows)
+rows = understandData(rows)
 
 
 hiddenLayer1Length = 20
@@ -83,14 +80,3 @@ network = network.Network(framework)
 
 network.train(rows)
 
-csvreader = csv.reader(fileTest)
-
-inputVariableNames = next(csvreader)
-
-rows = []
-for row in csvreader:
-    rows.append(row)
-
-rows = [[float(y) for y in x] for x in rows]
-print("\n")
-network.test(rows)

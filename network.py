@@ -1,116 +1,93 @@
 import math
+import numpy as np
 import random
-
-from matrix import Matrix
-
-sign = lambda a: float((a > 0) - (a < 0))
-
 
 def sigmoidLayer(layer):
     vector = []
     for i in layer:
-        vector.append(sigmoidFunction(i[0]))
+        vector.append(sigmoidFunction(i))
     return vector
 
 
 def sigmoidFunction(z):
-    maxSigInput = 10
-    if -maxSigInput < z < maxSigInput:
-        S = 1 / (1 + math.pow(math.e, -z))
-    else:
-        S = sign(z)
+    maxSigInput = 100
+
+    if -math.inf < z < -maxSigInput:
+        z = -maxSigInput
+    elif maxSigInput < z < math.inf:
+        z = maxSigInput
+    S = 1 / (1 + math.pow(math.e, -z))
+
     return S
 
 
-outputScale = 1
+outputScale = 10
 learningRate = .1
 
-
-# rows represent layers and cols represent which prev node its connected to
-def makeWeights(framework):
-    prevLayerLen = framework[0]
-    # for each layer in the framework excluding the input layer
-    layerMatrix = []
-    for L in framework[1:]:
-        matrix = Matrix([[random.uniform(-1, 1) for r in range(prevLayerLen)] for c in range(L)])
-        layerMatrix.append(matrix)
-        prevLayerLen = L
-    return layerMatrix
-
-
-# row represents layer col represents node
-def makeValueMatrix(framework):
-    valueMatrix = []
-    for L in framework:
-        vector = [0 for r in range(L)]
-        valueMatrix.append(vector)
-    vMatrix = Matrix(valueMatrix)
-    return vMatrix
+def sigmoidInverse(layer):
+    return np.multiply(layer, np.subtract(np.ones(len(layer)), layer))
 
 
 class Network:
 
     def __init__(self, framework):
-        self.errors = []
-        self.framework = framework
-        self.layerMatrix = makeWeights(framework)
-        self.valueMatrix = makeValueMatrix(framework)
-        self.biasMatrix = makeValueMatrix(framework)
-        self.expected = [0.0, 0.0]
+        self.expected = np.zeros(framework[len(framework) - 1])
+        self.outputerror = np.zeros(framework[len(framework) - 1])
+        self.layerWeightMatrix = [np.random.rand(framework[i], framework[i - 1]) for i in range(1, len(framework))]
+        self.baisMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
+        self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
+        self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
 
-    def setInput(self, input):
-        if len(input[:-1]) == self.valueMatrix.getColSize():
-            self.valueMatrix.setRow(0, input[:-1])
-            self.expected = input[len(input) - 1]
+    def setInputs(self, inputs):
+        if len(inputs[:-1]) == len(self.valueMatrix[0]):
+            self.valueMatrix[0] = np.array(inputs[:-1])
+            self.expected = np.array(inputs[len(inputs) - 1])
+        else:
+            print("failed to set inputs")
 
+    # feed forward works
     def feedForward(self):
-        for layer in range(len(self.layerMatrix)):
-            vector = Matrix(self.valueMatrix.getRow(layer))
-            bias = Matrix(self.biasMatrix.getRow(layer))
-            wMatrix = self.layerMatrix[layer]
-            vector.multiply(wMatrix)
-            vector.add(bias)
-            self.valueMatrix.setRow(layer + 1, sigmoidLayer(vector.matrix))
+        for l in range(len(self.valueMatrix[:-1])):
+            self.valueMatrix[l + 1] = np.array(sigmoidLayer(np.dot(self.layerWeightMatrix[l], self.valueMatrix[l])))
 
-    def errorSquared(self):
-        errorMatrix = makeValueMatrix(self.framework)
-        prevError = self.expected
-        for r in range(len(errorMatrix.matrix), 0, -1):
-            length = len(errorMatrix.getRow(r - 1))
-            if r == len(errorMatrix.matrix):
-                error = [math.pow(self.valueMatrix.at([r - 1, i]) - prevError[i], 2) for i in range(length)] if isinstance(prevError, list) else math.pow(self.valueMatrix.at([r - 1, 0]) - prevError, 2)
+    def calcError(self):
+        for layer in range(len(self.valueMatrix), 1, -1):
+            if layer == len(self.valueMatrix):
+                self.outputerror = [self.expected - (self.valueMatrix[layer - 1][0] * outputScale)]
+                self.errorMatrix[layer - 1] = np.power(self.outputerror, 1)
             else:
-                weightMatrix = self.layerMatrix[r - 1]
-                weightMatrix.transpose()
-                print(prevError, "prev")
-                error = weightMatrix.scale(prevError) if isinstance(prevError, float) else weightMatrix.dotProduct(prevError)
-            errorMatrix.setRow(r - 1, error)
-            prevError = error
-        self.errors.append(errorMatrix.getRow(errorMatrix.getRowSize() - 1))
-        return self.deltaWeight(errorMatrix)
+                self.errorMatrix[layer - 1] = np.dot(self.errorMatrix[layer], self.layerWeightMatrix[layer - 1])
 
-    def deltaWeight(self, errorMatrix):
-        dWeightMatrix = makeWeights(self.framework)
-        for r in range(1, len(dWeightMatrix)):
-            errorRow = Matrix(errorMatrix.getRow(r)).scale(learningRate)
-            errorRow = Matrix(errorRow)
-            valueRow = Matrix(self.valueMatrix.getRow(r - 1))
-            sigmoidInverse = self.valueMatrix.sigmoidInverse(r)
-            elementWise = Matrix(errorRow.multiply(sigmoidInverse))
-            valueRow.transpose()
-            print(elementWise.matrix, valueRow.matrix, "element value")
-            deltaWeights = elementWise.vectorVectorTranspose(valueRow)
-            dWeightMatrix[r] = deltaWeights
-        return dWeightMatrix
+    def gradient(self):
+        dWeightList = []
+        for layer in range(len(self.valueMatrix) - 1, 0, -1):
+            grad = sigmoidInverse(self.valueMatrix[layer])
+            grad = np.multiply(self.errorMatrix[layer], grad)
+            grad = np.multiply(grad, learningRate)
 
-    def updateWeights(self, dWeightMatrix):
-        for l in range(len(dWeightMatrix)):
-            self.layerMatrix[l].subtract(dWeightMatrix[l])
+            dWeight = grad[:, np.newaxis] * self.valueMatrix[layer - 1][np.newaxis, :]
+            dWeightList.append(dWeight)
+        dWeightList.reverse()
+
+        self.updateWeights(dWeightList)
+
+    def updateWeights(self, dWeight):
+        if len(dWeight) == len(self.layerWeightMatrix) and len(dWeight[0]) == len(self.layerWeightMatrix[0]):
+            for layers in range(len(dWeight)):
+                self.layerWeightMatrix[layers] = np.add(self.layerWeightMatrix[layers], dWeight[layers])
+        else:
+            print("bad update weight")
 
     def train(self, inputs):
-        for i in inputs:
-            self.setInput(i)
+        for input in inputs:
+            self.setInputs(input)
             self.feedForward()
-            print("feedForwardDone")
-            self.updateWeights(self.errorSquared())
-        print(self.errors)
+            self.calcError()
+            self.gradient()
+            print(abs(self.outputerror[0]))
+
+    def test(self, inputs):
+        self.setInputs(inputs)
+        self.feedForward()
+        self.calcError()
+        print(self.outputerror)

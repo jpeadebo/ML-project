@@ -1,8 +1,9 @@
 import network
+import numpy as np
 import csv
 
 trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTestingData.txt'
+testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
 
@@ -10,9 +11,6 @@ fileTest = open(testingData)
 def understandData(inputs):
     wC = {"Private": 1, "Self-emp-not-inc": 2, "Self-emp-inc": 3, "Federal-gov": 4, "Local-gov": 5, "State-gov": 6,
           "Without-pay": 7, "Never-worked": 8, "?": 0}
-    edu = {"Bachelors": 1, "Some-college": 2, "11th": 3, "HS-grad": 4, "Prof-school": 5, "Assoc-acdm": 6,
-           "Assoc-voc": 7, "9th": 8, "7th-8th": 9, "12th": 10, "Masters": 11, "1st-4th": 12, "10th": 13,
-           "Doctorate": 14, "5th-6th": 15, "Preschool": 16, "?": 0}
     mS = {"Married-civ-spouse": 1, "Divorced": 2, "Never-married": 3, "Separated": 4, "Widowed": 5,
           "Married-spouse-absent": 6, "Married-AF-spouse": 7, "?": 0}
     oc = {"Tech-support": 1, "Craft-repair": 2, "Other-service": 3, "Sales": 4, "Exec-managerial": 5,
@@ -38,7 +36,6 @@ def understandData(inputs):
         dataSet.append(wC[input[1]])
         # fnlwgt
         dataSet.append(input[2])
-        dataSet.append(edu[input[3]])
         # education-num
         dataSet.append(input[4])
         dataSet.append(mS[input[5]])
@@ -57,6 +54,7 @@ def understandData(inputs):
         understoodData.append(dataSet)
 
     understoodData = [[float(y) for y in x] for x in understoodData]
+
     return understoodData
 
 
@@ -69,14 +67,49 @@ for row in csvreader:
     rows.append(row)
 
 rows = understandData(rows)
-#rows = [[float(y) for y in x] for x in rows]
 
-hiddenLayer1Length = 20
-hiddenLayer2Length = 10
+
+# rows = [[float(y) for y in x] for x in rows]
+
+def scaleCols(rows):
+    for r in rows:
+        r[0] /= 90.0
+        r[1] /= 8.0
+        r[2] /= 1484705.0
+        r[3] /= 16.0
+        r[4] /= 7.0
+        r[5] /= 14.0
+        r[6] /= 6.0
+        r[7] /= 5.0
+        r[8] /= 2.0
+        r[9] /= 999999.0
+        r[10] /= 4356.0
+        r[11] /= 99.0
+        r[12] /= 40.0
+
+
+scaleCols(rows)
+
+hiddenLayer1Length = 40
+hiddenLayer2Length = 50
+hiddenLayer3Length = 20
 numOutputs = 1
 
-framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, hiddenLayer3Length, numOutputs]
 network = network.Network(framework)
 
 network.train(rows)
 
+print("-----------------------testing-----------------------")
+
+csvreader = csv.reader(fileTest)
+
+inputVariableNames = next(csvreader)
+
+rows = []
+for row in csvreader:
+    rows.append(row)
+
+rows = understandData(rows)
+
+# network.test(rows)

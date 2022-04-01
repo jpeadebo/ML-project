@@ -1,9 +1,6 @@
 import math
 import numpy as np
-import matplotlib as plt
-import seaborn as sns
 import random
-import csv
 
 
 def sigmoidLayer(layer):
@@ -25,12 +22,12 @@ def sigmoidFunction(z):
 
 
 outputScale = 1
-learningRate = .1
+learningRate = .05
 
 
 def realSigmoidInverse(i):
     sigInverse = sigmoidFunction(i[0])
-    return sigInverse * (1-sigInverse)
+    return sigInverse * (1 - sigInverse)
 
 
 def sigmoidInverse(layer):
@@ -40,9 +37,12 @@ def sigmoidInverse(layer):
 class Network:
 
     def __init__(self, framework):
+        self.numCorrect = 0
+        self.numZeros = 0
         self.expected = np.zeros(framework[len(framework) - 1])
         self.outputerror = np.zeros(framework[len(framework) - 1])
-        self.layerWeightMatrix = [np.random.rand(framework[i], framework[i - 1]) for i in range(1, len(framework))]
+        self.layerWeightMatrix = [np.random.uniform(-1, 1, size=(framework[i], framework[i - 1])) for i in
+                                  range(1, len(framework))]
         self.baisMatrix = [np.zeros(framework[i]) for i in range(1, len(framework))]
         self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
         self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
@@ -59,30 +59,37 @@ class Network:
         for l in range(len(self.valueMatrix[:-1])):
             dot = np.dot(np.array(self.layerWeightMatrix[l]), self.valueMatrix[l])
             self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
-        self.valueMatrix[len(self.valueMatrix)-1] = (self.valueMatrix[len(self.valueMatrix)-1] > .5) * 1
+        self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
 
     def calcOutputError(self):
         # need to make this scalable to any size output!
-        self.outputerror = (self.expected - self.valueMatrix[len(self.valueMatrix) - 1][0])
+        self.outputerror = (self.valueMatrix[len(self.valueMatrix) - 1][0] - self.expected)
+        if abs(self.outputerror) < 1:
+            self.numCorrect += 1
+        if self.expected == 0:
+            self.numZeros += 1
         self.errorMatrix[len(self.errorMatrix) - 1][0] = self.outputerror
 
     def gradient(self):
         dWeightList = []
         for layer in range(len(self.valueMatrix) - 1, 0, -1):
-            grad = realSigmoidInverse(self.valueMatrix[layer])
+            grad = realSigmoidInverse(self.valueMatrix[layer]) if layer == len(self.valueMatrix) - 1 else sigmoidLayer(self.valueMatrix[layer])
+            #grad = sigmoidLayer(self.valueMatrix[layer])
             grad = np.multiply(self.errorMatrix[layer], grad)
             grad = np.multiply(grad, learningRate)
 
             layerBackTrans = np.matrix(self.valueMatrix[layer - 1]).transpose()
 
             dWeight = np.dot(layerBackTrans, grad)
-            if layer != 2:
+
+            if layer != len(self.valueMatrix) - 1:
                 dWeight = np.transpose(dWeight)
 
             dWeightList.append(dWeight)
 
-            layerBackError = np.multiply(dWeight, self.errorMatrix[layer].transpose())
-            if layer != 2:
+            layerBackError = dWeight.transpose().dot(self.errorMatrix[layer][0])
+
+            if layer == len(self.valueMatrix) - 1:
                 layerBackError = np.transpose(layerBackError)
 
             self.errorMatrix[layer - 1] = np.array(layerBackError)
@@ -92,28 +99,32 @@ class Network:
     def updateWeights(self, dWeight):
         if len(dWeight) == len(self.layerWeightMatrix) and len(dWeight[0]) == len(self.layerWeightMatrix[0]):
             for layers in range(len(dWeight)):
-                self.layerWeightMatrix[layers] = np.add(self.layerWeightMatrix[layers], dWeight[layers])
+                self.layerWeightMatrix[layers] = np.subtract(self.layerWeightMatrix[layers], dWeight[layers])
         else:
             raise Exception("bad update weight")
 
-    epochSize = 1000
+    epochSize = 80000
 
     def train(self, inputs):
-        for i in range(100000):
-            rand = random.randint(0, len(inputs) - 1)
-            self.setInputs(inputs[rand])
-            self.feedForward()
-            self.calcOutputError()
-            self.gradient()
+        for input in range(len(inputs)):
+            for i in range(self.epochSize):
+                rand = random.randint(0, len(inputs) - 1)
+                self.setInputs(inputs[rand])
+                self.feedForward()
+                self.calcOutputError()
+                self.gradient()
+            print(self.numCorrect / self.epochSize, self.numZeros / self.epochSize, "percent correct, percent zeros")
+            self.numCorrect = 0
+            self.numZeros = 0
 
     def test(self, inputs):
-        for i in range(100):
+        for i in range(10):
             rand = random.randint(0, len(inputs) - 1)
             input = inputs[rand]
             self.setInputs(input)
             self.feedForward()
             self.calcOutputError()
-            print(self.outputerror)
+            print("Guess:", self.valueMatrix[len(self.valueMatrix) - 1], "Expected:", self.expected)
 
     def sumLayerToNode(self, weightLayer, valueLayer):
         sum = 0
@@ -181,26 +192,18 @@ class Network:
                     raise Exception("error Didnt work at r, c", r, c, cError[r][c], error[r][c])
 
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\wineQualityTrainingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
+def testXor():
+    inputs = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0],[1, 1, 1, 1]]
+    #inputs = [[0,0,0],[0,1,1], [1,0,1],[1,1,0]]
+    hiddenLayer1Length = 10
+    hiddenLayer2Length = 8
+    numOutputs = 1
 
-fileTrain = open(trainingData)
-csvreader = csv.reader(fileTrain)
+    framework = [len(inputs[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+    network = Network(framework)
 
-inputVariableNames = next(csvreader)
+    network.train(inputs)
+    network.test(inputs)
 
-rows = []
-for row in csvreader:
-    rows.append(row)
 
-rows = [[float(y) for y in x] for x in rows]
-
-inputs = [[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
-hiddenLayer1Length = 2
-numOutputs = 1
-
-framework = [len(inputs[0]) - 1, hiddenLayer1Length, numOutputs]
-network = Network(framework)
-
-network.train(inputs)
-network.test(inputs)
+testXor()

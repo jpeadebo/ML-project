@@ -90,12 +90,11 @@ def scaleCols(rows):
 
 scaleCols(rows)
 
-hiddenLayer1Length = 40
-hiddenLayer2Length = 50
-hiddenLayer3Length = 20
+hiddenLayer1Length = 30
+hiddenLayer2Length = 20
 numOutputs = 1
 
-framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, hiddenLayer3Length, numOutputs]
+framework = [len(rows[0]) - 1, hiddenLayer1Length, numOutputs]
 network = network.Network(framework)
 
 network.train(rows)
@@ -112,4 +111,4 @@ for row in csvreader:
 
 rows = understandData(rows)
 
-# network.test(rows)
+network.test(rows)

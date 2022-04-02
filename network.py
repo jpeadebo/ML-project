@@ -22,7 +22,6 @@ def sigmoidFunction(z):
 
 
 outputScale = 1
-learningRate = .05
 
 
 def realSigmoidInverse(i):
@@ -35,6 +34,7 @@ def sigmoidInverse(layer):
 
 
 class Network:
+    learningRate = .05
 
     def __init__(self, framework):
         self.numCorrect = 0
@@ -61,10 +61,13 @@ class Network:
             self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
         self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
 
+    errorList = []
+
     def calcOutputError(self):
         # need to make this scalable to any size output!
         self.outputerror = (self.valueMatrix[len(self.valueMatrix) - 1][0] - self.expected)
-        if abs(self.outputerror) < 1:
+        #self.errorList.append(self.outputerror)
+        if abs(self.outputerror) == 0:
             self.numCorrect += 1
         if self.expected == 0:
             self.numZeros += 1
@@ -73,10 +76,12 @@ class Network:
     def gradient(self):
         dWeightList = []
         for layer in range(len(self.valueMatrix) - 1, 0, -1):
+            # since we are setting the output to 0 or 1 we need to do a proper sigmoid inverse rather then the fake one
             grad = realSigmoidInverse(self.valueMatrix[layer]) if layer == len(self.valueMatrix) - 1 else sigmoidLayer(self.valueMatrix[layer])
+            # use this if output is sigmoided
             #grad = sigmoidLayer(self.valueMatrix[layer])
             grad = np.multiply(self.errorMatrix[layer], grad)
-            grad = np.multiply(grad, learningRate)
+            grad = np.multiply(grad, self.learningRate)
 
             layerBackTrans = np.matrix(self.valueMatrix[layer - 1]).transpose()
 
@@ -103,22 +108,29 @@ class Network:
         else:
             raise Exception("bad update weight")
 
-    epochSize = 80000
+    epochSize = 50000
+    threshold = .95
 
     def train(self, inputs):
-        for input in range(len(inputs)):
+        percentError = 0
+        while percentError < self.threshold:
+            print("----------------------NEW----------------")
             for i in range(self.epochSize):
                 rand = random.randint(0, len(inputs) - 1)
                 self.setInputs(inputs[rand])
                 self.feedForward()
                 self.calcOutputError()
                 self.gradient()
-            print(self.numCorrect / self.epochSize, self.numZeros / self.epochSize, "percent correct, percent zeros")
+            percentError = self.numCorrect / self.epochSize
+            print(percentError, self.numZeros / self.epochSize, "percent correct, percent zeros")
+            if percentError > self.threshold - .1:
+                print("update")
+                self.learningRate = .01
             self.numCorrect = 0
             self.numZeros = 0
 
     def test(self, inputs):
-        for i in range(10):
+        for i in range(40):
             rand = random.randint(0, len(inputs) - 1)
             input = inputs[rand]
             self.setInputs(input)
@@ -195,8 +207,8 @@ class Network:
 def testXor():
     inputs = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0],[1, 1, 1, 1]]
     #inputs = [[0,0,0],[0,1,1], [1,0,1],[1,1,0]]
-    hiddenLayer1Length = 10
-    hiddenLayer2Length = 8
+    hiddenLayer1Length = 20
+    hiddenLayer2Length = 10
     numOutputs = 1
 
     framework = [len(inputs[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]

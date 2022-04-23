@@ -94,7 +94,7 @@ hiddenLayer1Length = 30
 hiddenLayer2Length = 20
 numOutputs = 1
 
-framework = [len(rows[0]) - 1, hiddenLayer1Length, numOutputs]
+framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
 network = network.Network(framework)
 
 network.train(rows)

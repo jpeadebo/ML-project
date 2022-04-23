@@ -47,6 +47,12 @@ class Network:
         self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
         self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
 
+    def getWeightMatrix(self):
+        return self.layerWeightMatrix
+
+    def setWeightMatrix(self, matrix):
+        self.layerWeightMatrix = matrix
+
     def setInputs(self, inputs):
         if len(inputs[:-1]) == len(self.valueMatrix[0]):
             self.valueMatrix[0] = np.array(inputs[:-1])
@@ -60,6 +66,8 @@ class Network:
             dot = np.dot(np.array(self.layerWeightMatrix[l]), self.valueMatrix[l])
             self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
         self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
+        return self.valueMatrix[len(self.valueMatrix) - 1]
+
 
     errorList = []
 

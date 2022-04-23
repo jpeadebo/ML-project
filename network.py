@@ -217,4 +217,3 @@ def testXor():
 
     network.train(inputs)
     network.test(inputs)
-

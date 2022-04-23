@@ -21,15 +21,6 @@ def sigmoidFunction(z):
     return S
 
 
-def sigmoidFunction(z):
-    if 100 < z < math.inf:
-        z = 100
-    elif -math.inf < z < -100:
-        z = -100
-    S = 1 / (1 + math.pow(math.e, -z))
-    return S
-
-
 outputScale = 1
 
 
@@ -43,7 +34,7 @@ def sigmoidInverse(layer):
 
 
 class Network:
-    learningRate = .05
+    learningRate = .1
 
     def __init__(self, framework):
         self.numCorrect = 0
@@ -134,7 +125,7 @@ class Network:
             print(percentError, self.numZeros / self.epochSize, "percent correct, percent zeros")
             if percentError > self.threshold - .1:
                 print("update")
-                self.learningRate = .01
+                self.learningRate = .02
             self.numCorrect = 0
             self.numZeros = 0
         return percentError

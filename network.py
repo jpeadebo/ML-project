@@ -128,6 +128,7 @@ class Network:
                 self.learningRate = .01
             self.numCorrect = 0
             self.numZeros = 0
+        return percentError
 
     def test(self, inputs):
         for i in range(40):
@@ -217,5 +218,3 @@ def testXor():
     network.train(inputs)
     network.test(inputs)
 
-
-testXor()

@@ -2,10 +2,31 @@ import network
 import numpy as np
 import csv
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTrainingData.txt'
+testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTestingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
+
+
+def temp(inputs):
+    understoodData = []
+    for input in inputs:
+        row = []
+        for att in range(len(input)):
+            if att == len(input) - 1:
+                row.append(0 if input[att] == 'b' else 1)
+            else:
+                row.append(input[att])
+        understoodData.append(row)
+    return allNumericalData(understoodData)
+
+
+# todo implement a working data tool that can take in numbers and strings and convert them to useable numerical data
+
+
+def allNumericalData(inputs):
+    understoodData = [[float(attributes) for attributes in i] for i in inputs]
+    return understoodData
 
 
 def understandData(inputs):
@@ -53,7 +74,7 @@ def understandData(inputs):
         dataSet.append(aboveBelow[input[14]])
         understoodData.append(dataSet)
 
-    understoodData = [[float(y) for y in x] for x in understoodData]
+    understoodData = allNumericalData(understoodData)
 
     return understoodData
 
@@ -66,31 +87,25 @@ rows = []
 for row in csvreader:
     rows.append(row)
 
-rows = understandData(rows)
+rows = temp(rows)
 
 
 # rows = [[float(y) for y in x] for x in rows]
 
-def scaleCols(rows):
+def autoScaleAllRows(rows):
+    maxs = [1] * len(rows[0])
     for r in rows:
-        r[0] /= 90.0
-        r[1] /= 8.0
-        r[2] /= 1484705.0
-        r[3] /= 16.0
-        r[4] /= 7.0
-        r[5] /= 14.0
-        r[6] /= 6.0
-        r[7] /= 5.0
-        r[8] /= 2.0
-        r[9] /= 999999.0
-        r[10] /= 4356.0
-        r[11] /= 99.0
-        r[12] /= 40.0
+        for c in range(len(r)):
+            maxs[c] = max(maxs[c], abs(r[c]))
+
+    for r in rows:
+        for c in range(len(r)):
+            r[c] /= maxs[c]
 
 
-scaleCols(rows)
+autoScaleAllRows(rows)
 
-hiddenLayer1Length = 30
+hiddenLayer1Length = 40
 hiddenLayer2Length = 20
 numOutputs = 1
 
@@ -109,6 +124,6 @@ rows = []
 for row in csvreader:
     rows.append(row)
 
-rows = understandData(rows)
+rows = allNumericalData(rows)
 
 network.test(rows)

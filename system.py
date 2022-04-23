@@ -1,20 +1,37 @@
 import network
+import numpy as np
 import csv
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTrainingData.txt'
+testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTestingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
 
-csvreader = csv.reader(fileTrain)
+
+def temp(inputs):
+    understoodData = []
+    for input in inputs:
+        row = []
+        for att in range(len(input)):
+            if att == len(input) - 1:
+                row.append(0 if input[att] == 'b' else 1)
+            else:
+                row.append(input[att])
+        understoodData.append(row)
+    return allNumericalData(understoodData)
+
+
+# todo implement a working data tool that can take in numbers and strings and convert them to useable numerical data
+
+
+def allNumericalData(inputs):
+    understoodData = [[float(attributes) for attributes in i] for i in inputs]
+    return understoodData
 
 
 def understandData(inputs):
     wC = {"Private": 1, "Self-emp-not-inc": 2, "Self-emp-inc": 3, "Federal-gov": 4, "Local-gov": 5, "State-gov": 6,
           "Without-pay": 7, "Never-worked": 8, "?": 0}
-    edu = {"Bachelors": 1, "Some-college": 2, "11th": 3, "HS-grad": 4, "Prof-school": 5, "Assoc-acdm": 6,
-           "Assoc-voc": 7, "9th": 8, "7th-8th": 9, "12th": 10, "Masters": 11, "1st-4th": 12, "10th": 13,
-           "Doctorate": 14, "5th-6th": 15, "Preschool": 16, "?": 0}
     mS = {"Married-civ-spouse": 1, "Divorced": 2, "Never-married": 3, "Separated": 4, "Widowed": 5,
           "Married-spouse-absent": 6, "Married-AF-spouse": 7, "?": 0}
     oc = {"Tech-support": 1, "Craft-repair": 2, "Other-service": 3, "Sales": 4, "Exec-managerial": 5,
@@ -30,7 +47,7 @@ def understandData(inputs):
               "Laos": 25, "Ecuador": 26, "Taiwan": 27, "Haiti": 28, "Columbia": 29, "Hungary": 30, "Guatemala": 31,
               "Nicaragua": 32, "Scotland": 33, "Thailand": 34, "Yugoslavia": 35, "El-Salvador": 36,
               "Trinadad&Tobago": 37, "Peru": 38, "Hong": 39, "Holand-Netherlands": 40, "?": 0}
-    aboveBelow = {"<":1, ">":2, "?":0}
+    aboveBelow = {"<": 0, ">": 1, "?": -1}
 
     understoodData = []
     for input in inputs:
@@ -40,7 +57,6 @@ def understandData(inputs):
         dataSet.append(wC[input[1]])
         # fnlwgt
         dataSet.append(input[2])
-        dataSet.append(edu[input[3]])
         # education-num
         dataSet.append(input[4])
         dataSet.append(mS[input[5]])
@@ -58,21 +74,56 @@ def understandData(inputs):
         dataSet.append(aboveBelow[input[14]])
         understoodData.append(dataSet)
 
-    understoodData = [[float(y) for y in x] for x in understoodData]
+    understoodData = allNumericalData(understoodData)
+
     return understoodData
 
+
+csvreader = csv.reader(fileTrain)
+
+inputVariableNames = next(csvreader)
 
 rows = []
 for row in csvreader:
     rows.append(row)
 
-rows = understandData(rows)
+rows = temp(rows)
 
-hiddenLayer1Length = 20
-hiddenLayer2Length = 10
+
+# rows = [[float(y) for y in x] for x in rows]
+
+def autoScaleAllRows(rows):
+    maxs = [1] * len(rows[0])
+    for r in rows:
+        for c in range(len(r)):
+            maxs[c] = max(maxs[c], abs(r[c]))
+
+    for r in rows:
+        for c in range(len(r)):
+            r[c] /= maxs[c]
+
+
+autoScaleAllRows(rows)
+
+hiddenLayer1Length = 40
+hiddenLayer2Length = 20
 numOutputs = 1
 
-framework = [len(rows[0])-1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+framework = [len(rows[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
 network = network.Network(framework)
 
 network.train(rows)
+
+print("-----------------------testing-----------------------")
+
+csvreader = csv.reader(fileTest)
+
+inputVariableNames = next(csvreader)
+
+rows = []
+for row in csvreader:
+    rows.append(row)
+
+rows = allNumericalData(rows)
+
+network.test(rows)

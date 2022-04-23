@@ -1,5 +1,24 @@
 import math
+import numpy as np
 import random
+
+
+def sigmoidLayer(layer):
+    vector = []
+    for i in layer:
+        vector.append(sigmoidFunction(i))
+    return vector
+
+
+def sigmoidFunction(z):
+    maxSigInput = 100
+    if -math.inf < z < -maxSigInput:
+        z = -maxSigInput
+    elif maxSigInput < z < math.inf:
+        z = maxSigInput
+    S = 1 / (1 + math.pow(math.e, -z))
+
+    return S
 
 
 def sigmoidFunction(z):
@@ -11,191 +30,199 @@ def sigmoidFunction(z):
     return S
 
 
-outputScale = 2
-learningRate = .1
+outputScale = 1
+
+
+def realSigmoidInverse(i):
+    sigInverse = sigmoidFunction(i[0])
+    return sigInverse * (1 - sigInverse)
+
+
+def sigmoidInverse(layer):
+    return np.multiply(layer, np.subtract(np.ones(len(layer)), layer))
 
 
 class Network:
+    learningRate = .05
 
-    def __init__(self, frameWork):
-        self.framework = frameWork
-        self.numLayers = len(self.framework)
-        self.layers = []
-        self.createFramework()
-        self.setWeightsRandom()
-
-    def outputLayer(self):
-        return self.layers[self.numLayers - 1]
-
-    def displayOutput(self):
-        return self.outputLayer() * outputScale
-
-    def printWeights(self):
-        for i in self.layers:
-            for j in i:
-                print(j.getWeights())
-            print("\n")
-
-    def printValues(self):
-        for i in self.layers:
-            for j in i:
-                print(j.getValue())
-            print("\n")
-
-    def printOutputs(self):
-        for i in self.outputLayer():
-            print(i.getValue())
-        print("\n")
-
-    def printError(self):
-        for i in self.outputLayer():
-            print(i.getError())
-
-    def createFramework(self):
-        for i in self.framework:
-            layer = []
-            for j in range(0, i):
-                neuron = Neuron()
-                layer.append(neuron)
-            self.layers.append(layer)
+    def __init__(self, framework):
+        self.numCorrect = 0
+        self.numZeros = 0
+        self.expected = np.zeros(framework[len(framework) - 1])
+        self.outputerror = np.zeros(framework[len(framework) - 1])
+        self.layerWeightMatrix = [np.random.uniform(-1, 1, size=(framework[i], framework[i - 1])) for i in
+                                  range(1, len(framework))]
+        self.baisMatrix = [np.zeros(framework[i]) for i in range(1, len(framework))]
+        self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
+        self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
 
     def setInputs(self, inputs):
-        for i in range(len(inputs)):
-            self.layers[0][i].setValue(inputs[i])
+        if len(inputs[:-1]) == len(self.valueMatrix[0]):
+            self.valueMatrix[0] = np.array(inputs[:-1])
+            self.expected = np.array(inputs[len(inputs) - 1])
+        else:
+            raise Exception("failed to set inputs", inputs)
 
-    def setWeightsRandom(self):
-        for i in range(len(self.layers)):
-            for j in range(len(self.layers[i])):
-                randomList = []
-                for k in range(len(self.layers[(i if i == 0 else i - 1)])):
-                    randomList.append(0 if i == 0 else random.uniform(-1, 1))
-                self.layers[i][j].setWeights(randomList)
+    # feed forward works
+    def feedForward(self):
+        for l in range(len(self.valueMatrix[:-1])):
+            dot = np.dot(np.array(self.layerWeightMatrix[l]), self.valueMatrix[l])
+            self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
+        self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
 
-    def getLayerValues(self, level):
-        layerValues = []
-        for i in range(len(self.layers[level])):
-            layerValues.append(self.layers[level][i].getValue())
-        return layerValues
+    errorList = []
 
-    def calcOutputs(self):
-        for i in range(len(self.layers)):
-            if i != 0:
-                prevLayerValues = self.getLayerValues(i - 1)
-                for j in range(len(self.layers[i])):
-                    self.layers[i][j].calcValue(prevLayerValues)
+    def calcOutputError(self):
+        # need to make this scalable to any size output!
+        self.outputerror = (self.valueMatrix[len(self.valueMatrix) - 1][0] - self.expected)
+        #self.errorList.append(self.outputerror)
+        if abs(self.outputerror) == 0:
+            self.numCorrect += 1
+        if self.expected == 0:
+            self.numZeros += 1
+        self.errorMatrix[len(self.errorMatrix) - 1][0] = self.outputerror
 
-    # end of network setup
-    # start of backprop
-    def calcError(self, target):
-        prevLayer = self.outputLayer()
-        for i in prevLayer:
-            i.setError(math.pow(target - i.getValue(), 2))
-        # layers[1:-1] means remove input and output layers from being changed
-        for j in reversed(self.layers[1:-1]):
-            for i in range(len(j)):
-                nodeError = 0
-                for l in prevLayer:
-                    strength = l.getWeights()[i]
-                    nodeError += strength * l.getError()
-                j[i].setError(nodeError)
-            prevLayer = j
-        return self.layers[self.numLayers - 1][0].getError()
+    def gradient(self):
+        dWeightList = []
+        for layer in range(len(self.valueMatrix) - 1, 0, -1):
+            # since we are setting the output to 0 or 1 we need to do a proper sigmoid inverse rather then the fake one
+            grad = realSigmoidInverse(self.valueMatrix[layer]) if layer == len(self.valueMatrix) - 1 else sigmoidLayer(self.valueMatrix[layer])
+            # use this if output is sigmoided
+            #grad = sigmoidLayer(self.valueMatrix[layer])
+            grad = np.multiply(self.errorMatrix[layer], grad)
+            grad = np.multiply(grad, self.learningRate)
 
-    def calcDeltaWeights(self):
-        # element wise multiplication
-        prevLayer = self.layers[0]
-        dArrayWeights = []
-        for j in self.layers[1:]:
-            dLayerWeight = []
-            for i in range(len(j)):
-                sigmoidInverse = j[i].getValue() * (1 - j[i].getValue())
-                dWeight = learningRate * j[i].getError() * sigmoidInverse
-                dLayerWeight.append(dWeight)
-            layerWeightCol = []
-            for c in dLayerWeight:
-                layerWeightRow = []
-                for r in prevLayer:
-                    layerWeightRow.append(c * r.getValue())
-                layerWeightCol.append(layerWeightRow)
-            dArrayWeights.append(layerWeightCol)
-            prevLayer = j
-        return dArrayWeights
+            layerBackTrans = np.matrix(self.valueMatrix[layer - 1]).transpose()
 
-    def applyDeltaWeights(self):
-        dArrayWeights = self.calcDeltaWeights()
-        for i in range(len(dArrayWeights)):
-            for j in range(len(dArrayWeights[i])):
-                self.layers[i + 1][j].updateWeights(dArrayWeights[i][j])
+            dWeight = np.dot(layerBackTrans, grad)
 
-    def scaleOutputs(self, scale):
-        for i in self.outputLayer():
-            i.scaleValue(scale)
+            if layer != len(self.valueMatrix) - 1:
+                dWeight = np.transpose(dWeight)
 
-    def train(self, inputs):
-        for input in inputs:
-            if len(input) != 0:
-                self.setInputs(input[:-1])
-                target = input[len(input) - 1]
-                self.calcOutputs()
-                self.scaleOutputs(outputScale)
-                print(target, self.outputLayer()[0].getValue())
-                self.calcError(target)
-                self.applyDeltaWeights()
+            dWeightList.append(dWeight)
 
-    def test(self, inputs):
-        for input in inputs:
-            if len(input) != 0:
-                self.setInputs(input[:-1])
-                self.calcOutputs()
-                self.printError()
+            layerBackError = dWeight.transpose().dot(self.errorMatrix[layer][0])
 
+            if layer == len(self.valueMatrix) - 1:
+                layerBackError = np.transpose(layerBackError)
 
-class Neuron:
-
-    def __init__(self):
-        # weights is the list of connecting values between the current neuron and the previous layer
-        self.weights = []
-        self.value = 0
-        self.bias = 0
-        self.error = 0
-
-    def scaleValue(self, scale):
-        self.value *= scale
-
-    def getWeights(self):
-        return self.weights
-
-    def getValue(self):
-        return self.value
-
-    def getBias(self):
-        return self.bias
-
-    def getError(self):
-        return self.error
-
-    def setWeights(self, w):
-        self.weights = w
-
-    def setValue(self, v):
-        self.value = v
-
-    def setBias(self, b):
-        self.bias = b
-
-    def setError(self, e):
-        self.error = e
+            self.errorMatrix[layer - 1] = np.array(layerBackError)
+        dWeightList.reverse()
+        self.updateWeights(dWeightList)
 
     def updateWeights(self, dWeight):
-        updatedWeights = []
-        currentWeights = self.getWeights()
-        for i in range(len(currentWeights)):
-            updatedWeights.append(currentWeights[i] + dWeight[i])
-        self.setWeights(updatedWeights)
+        if len(dWeight) == len(self.layerWeightMatrix) and len(dWeight[0]) == len(self.layerWeightMatrix[0]):
+            for layers in range(len(dWeight)):
+                self.layerWeightMatrix[layers] = np.subtract(self.layerWeightMatrix[layers], dWeight[layers])
+        else:
+            raise Exception("bad update weight")
 
-    def calcValue(self, prevLayerValues):
-        summation = 0.0
-        for i in range(len(prevLayerValues)):
-            summation += self.getWeights()[i] * prevLayerValues[i]
-        z = summation + self.getBias()
-        self.setValue(sigmoidFunction(z))
+    epochSize = 50000
+    threshold = .95
+
+    def train(self, inputs):
+        percentError = 0
+        while percentError < self.threshold:
+            print("----------------------NEW----------------")
+            for i in range(self.epochSize):
+                rand = random.randint(0, len(inputs) - 1)
+                self.setInputs(inputs[rand])
+                self.feedForward()
+                self.calcOutputError()
+                self.gradient()
+            percentError = self.numCorrect / self.epochSize
+            print(percentError, self.numZeros / self.epochSize, "percent correct, percent zeros")
+            if percentError > self.threshold - .1:
+                print("update")
+                self.learningRate = .01
+            self.numCorrect = 0
+            self.numZeros = 0
+        return percentError
+
+    def test(self, inputs):
+        for i in range(40):
+            rand = random.randint(0, len(inputs) - 1)
+            input = inputs[rand]
+            self.setInputs(input)
+            self.feedForward()
+            self.calcOutputError()
+            print("Guess:", self.valueMatrix[len(self.valueMatrix) - 1], "Expected:", self.expected)
+
+    def sumLayerToNode(self, weightLayer, valueLayer):
+        sum = 0
+        print(weightLayer, valueLayer, "here")
+        if len(weightLayer) == len(valueLayer):
+            for i in range(len(weightLayer)):
+                sum += weightLayer[i] * valueLayer[i]
+        else:
+            raise Exception("weightlayer and valuerLayer arent equal", len(weightLayer), len(valueLayer))
+        return sum
+
+    def checkFeedForward(self):
+        layerWeight = self.layerWeightMatrix
+        value = self.valueMatrix
+        error = self.errorMatrix
+        cValue = []
+        cValue.append(value[0])
+        for r in range(len(value[:-1])):
+            rV = []
+            for c in range(len(value[r + 1])):
+                vVect = value[r]
+                wL = layerWeight[r][c]
+                rV.append(sigmoidFunction(self.sumLayerToNode(vVect, wL)))
+            cValue.append(rV)
+
+        toleranceFF = .25
+        for r in range(len(value)):
+            for c in range(len(value[r])):
+                if not math.isclose(cValue[r][c], value[r][c], abs_tol=toleranceFF):
+                    print("----------------error--------------")
+                    print(cValue, "||", value, "cvalue, value")
+                    print(layerWeight, "layer Weight")
+                    raise Exception("feedForward Didnt work at r, c", r, c, cValue[r][c], value[r][c])
+
+    def checkError(self):
+        layerWeight = self.layerWeightMatrix
+        value = self.valueMatrix
+        error = self.errorMatrix
+        cError = []
+        eV = []
+
+        for o in range(len(error[len(error) - 1])):
+            eV.append(pow(self.expected - (value[len(error) - 1][o] * outputScale), 2))
+        cError.append(eV)
+
+        for r in range(len(value[:-1]), 0, -1):
+            rV = []
+            for c in range(len(value[r - 1])):
+                sum = 0
+                for n in range(len(value[r])):
+                    sum += error[r][n] * layerWeight[r - 1][n][c]
+                rV.append(sum)
+            cError.append(rV)
+
+        cError.reverse()
+
+        # compare cError and error
+        toleranceE = .25
+        for r in range(len(value)):
+            for c in range(len(value[r])):
+                if not math.isclose(cError[r][c], error[r][c], abs_tol=toleranceE):
+                    print("----------------error--------------")
+                    print(cError, "||", error, "cvalue, value")
+                    print(layerWeight, "layer Weight")
+                    raise Exception("error Didnt work at r, c", r, c, cError[r][c], error[r][c])
+
+
+def testXor():
+    inputs = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0],[1, 1, 1, 1]]
+    #inputs = [[0,0,0],[0,1,1], [1,0,1],[1,1,0]]
+    hiddenLayer1Length = 20
+    hiddenLayer2Length = 10
+    numOutputs = 1
+
+    framework = [len(inputs[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+    network = Network(framework)
+
+    network.train(inputs)
+    network.test(inputs)

@@ -21,6 +21,15 @@ def sigmoidFunction(z):
     return S
 
 
+def sigmoidFunction(z):
+    if 100 < z < math.inf:
+        z = 100
+    elif -math.inf < z < -100:
+        z = -100
+    S = 1 / (1 + math.pow(math.e, -z))
+    return S
+
+
 outputScale = 1
 
 

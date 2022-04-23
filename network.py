@@ -33,23 +33,34 @@ def sigmoidInverse(layer):
     return np.multiply(layer, np.subtract(np.ones(len(layer)), layer))
 
 
+inputBias = 1 # 0 for off 1 for on
+hiddenBias = 1 # 0 for off 1 for on
+
+
 class Network:
     learningRate = .1
 
     def __init__(self, framework):
+        #add bias node if its wanted
+        framework[0] += inputBias
+        for hiddenLayers in range(1, len(framework) - 1):
+            framework[hiddenLayers] += hiddenBias
+
         self.numCorrect = 0
         self.numZeros = 0
         self.expected = np.zeros(framework[len(framework) - 1])
         self.outputerror = np.zeros(framework[len(framework) - 1])
         self.layerWeightMatrix = [np.random.uniform(-1, 1, size=(framework[i], framework[i - 1])) for i in
                                   range(1, len(framework))]
-        self.baisMatrix = [np.zeros(framework[i]) for i in range(1, len(framework))]
-        self.valueMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
+        self.valueMatrix = [np.ones(framework[i]) for i in range(len(framework))]
         self.errorMatrix = [np.zeros(framework[i]) for i in range(len(framework))]
 
     def setInputs(self, inputs):
-        if len(inputs[:-1]) == len(self.valueMatrix[0]):
+        if len(inputs[:-1])+inputBias == len(self.valueMatrix[0]):
             self.valueMatrix[0] = np.array(inputs[:-1])
+            if inputBias:
+                self.valueMatrix[0] = np.append(self.valueMatrix[0], np.ones(1))
+
             self.expected = np.array(inputs[len(inputs) - 1])
         else:
             raise Exception("failed to set inputs", inputs)
@@ -57,7 +68,10 @@ class Network:
     # feed forward works
     def feedForward(self):
         for l in range(len(self.valueMatrix[:-1])):
+            if hiddenBias:
+                self.valueMatrix[l][len(self.valueMatrix[l])-1] = 1
             dot = np.dot(np.array(self.layerWeightMatrix[l]), self.valueMatrix[l])
+
             self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
         self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
 
@@ -108,7 +122,7 @@ class Network:
         else:
             raise Exception("bad update weight")
 
-    epochSize = 50000
+    epochSize = 5000
     threshold = .95
 
     def train(self, inputs):

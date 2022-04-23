@@ -2,8 +2,8 @@ import network
 import numpy as np
 import csv
 
-trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\trainingData.txt'
-testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\testingData.txt'
+trainingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTrainingData.txt'
+testingData = 'C:\\Users\\andyd\\git\\ML-project\\datasets\\ionosphereTestingData.txt'
 fileTrain = open(trainingData)
 fileTest = open(testingData)
 

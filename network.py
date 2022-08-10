@@ -3,6 +3,7 @@ import numpy as np
 import random
 
 
+# runs a layer of value matrix over the sigmoid function to map it between -1 and 1
 def sigmoidLayer(layer):
     vector = []
     for i in layer:
@@ -10,6 +11,8 @@ def sigmoidLayer(layer):
     return vector
 
 
+# limits the max input -100 to 100 due to rounding errors??? need more understanding again on why i did this but there
+# was a reason
 def sigmoidFunction(z):
     maxSigInput = 100
     if -math.inf < z < -maxSigInput:
@@ -29,12 +32,13 @@ def realSigmoidInverse(i):
     return sigInverse * (1 - sigInverse)
 
 
+# calc
 def sigmoidInverse(layer):
     return np.multiply(layer, np.subtract(np.ones(len(layer)), layer))
 
 
 class Network:
-    learningRate = .1
+    learningRate = .05
 
     def __init__(self, framework):
         self.numCorrect = 0
@@ -53,21 +57,26 @@ class Network:
             self.expected = np.array(inputs[len(inputs) - 1])
         else:
             raise Exception("failed to set inputs", inputs)
+        print(self.valueMatrix)
 
     # feed forward works
     def feedForward(self):
         for l in range(len(self.valueMatrix[:-1])):
+            # find next layer values by multiplying prev value layer by current weight matrix layer
             dot = np.dot(np.array(self.layerWeightMatrix[l]), self.valueMatrix[l])
+            # apply sigmoid function to new layer to put it in bounds for activation
             self.valueMatrix[l + 1] = np.array(sigmoidLayer(dot))
+        # if output is greater than 50% set to true, if less than set false
         self.valueMatrix[len(self.valueMatrix) - 1] = (self.valueMatrix[len(self.valueMatrix) - 1] > .5) * 1
 
     errorList = []
 
     def calcOutputError(self):
-        # need to make this scalable to any size output!
+        # need to make this scalable to any size output layer!
+        # finds the diffrence between the networks guess and the correct answer
         self.outputerror = (self.valueMatrix[len(self.valueMatrix) - 1][0] - self.expected)
-        #self.errorList.append(self.outputerror)
-        if abs(self.outputerror) == 0:
+
+        if self.outputerror == 0:
             self.numCorrect += 1
         if self.expected == 0:
             self.numZeros += 1
@@ -75,16 +84,23 @@ class Network:
 
     def gradient(self):
         dWeightList = []
+        # once we have the error of the output layer we need to back calculate the error of the network to find the
+        # gradient to find the optimal direction of movement for the network for that specific question
         for layer in range(len(self.valueMatrix) - 1, 0, -1):
             # since we are setting the output to 0 or 1 we need to do a proper sigmoid inverse rather then the fake one
-            grad = realSigmoidInverse(self.valueMatrix[layer]) if layer == len(self.valueMatrix) - 1 else sigmoidLayer(self.valueMatrix[layer])
+            grad = realSigmoidInverse(self.valueMatrix[layer]) if layer == len(self.valueMatrix) - 1 else sigmoidLayer(
+                self.valueMatrix[layer])
             # use this if output is sigmoided
-            #grad = sigmoidLayer(self.valueMatrix[layer])
+            # grad = sigmoidLayer(self.valueMatrix[layer])
+
+            # find the amount of contribution each node had to the prev layers error
             grad = np.multiply(self.errorMatrix[layer], grad)
+            # scale the distance travled by the gradient so we dont overstep the problem
             grad = np.multiply(grad, self.learningRate)
 
             layerBackTrans = np.matrix(self.valueMatrix[layer - 1]).transpose()
 
+            # this is the found change in weights we need to get closer to the correct answer
             dWeight = np.dot(layerBackTrans, grad)
 
             if layer != len(self.valueMatrix) - 1:
@@ -139,81 +155,20 @@ class Network:
             self.calcOutputError()
             print("Guess:", self.valueMatrix[len(self.valueMatrix) - 1], "Expected:", self.expected)
 
-    def sumLayerToNode(self, weightLayer, valueLayer):
-        sum = 0
-        print(weightLayer, valueLayer, "here")
-        if len(weightLayer) == len(valueLayer):
-            for i in range(len(weightLayer)):
-                sum += weightLayer[i] * valueLayer[i]
-        else:
-            raise Exception("weightlayer and valuerLayer arent equal", len(weightLayer), len(valueLayer))
-        return sum
-
-    def checkFeedForward(self):
-        layerWeight = self.layerWeightMatrix
-        value = self.valueMatrix
-        error = self.errorMatrix
-        cValue = []
-        cValue.append(value[0])
-        for r in range(len(value[:-1])):
-            rV = []
-            for c in range(len(value[r + 1])):
-                vVect = value[r]
-                wL = layerWeight[r][c]
-                rV.append(sigmoidFunction(self.sumLayerToNode(vVect, wL)))
-            cValue.append(rV)
-
-        toleranceFF = .25
-        for r in range(len(value)):
-            for c in range(len(value[r])):
-                if not math.isclose(cValue[r][c], value[r][c], abs_tol=toleranceFF):
-                    print("----------------error--------------")
-                    print(cValue, "||", value, "cvalue, value")
-                    print(layerWeight, "layer Weight")
-                    raise Exception("feedForward Didnt work at r, c", r, c, cValue[r][c], value[r][c])
-
-    def checkError(self):
-        layerWeight = self.layerWeightMatrix
-        value = self.valueMatrix
-        error = self.errorMatrix
-        cError = []
-        eV = []
-
-        for o in range(len(error[len(error) - 1])):
-            eV.append(pow(self.expected - (value[len(error) - 1][o] * outputScale), 2))
-        cError.append(eV)
-
-        for r in range(len(value[:-1]), 0, -1):
-            rV = []
-            for c in range(len(value[r - 1])):
-                sum = 0
-                for n in range(len(value[r])):
-                    sum += error[r][n] * layerWeight[r - 1][n][c]
-                rV.append(sum)
-            cError.append(rV)
-
-        cError.reverse()
-
-        # compare cError and error
-        toleranceE = .25
-        for r in range(len(value)):
-            for c in range(len(value[r])):
-                if not math.isclose(cError[r][c], error[r][c], abs_tol=toleranceE):
-                    print("----------------error--------------")
-                    print(cError, "||", error, "cvalue, value")
-                    print(layerWeight, "layer Weight")
-                    raise Exception("error Didnt work at r, c", r, c, cError[r][c], error[r][c])
-
 
 def testXor():
-    inputs = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0],[1, 1, 1, 1]]
+    inputs = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 0, 0],
+              [1, 1, 1, 1]]
     #inputs = [[0,0,0],[0,1,1], [1,0,1],[1,1,0]]
     hiddenLayer1Length = 20
     hiddenLayer2Length = 10
     numOutputs = 1
 
-    framework = [len(inputs[0]) - 1, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
+    framework = [len(inputs[0]) - numOutputs, hiddenLayer1Length, hiddenLayer2Length, numOutputs]
     network = Network(framework)
 
     network.train(inputs)
     network.test(inputs)
+
+
+testXor()

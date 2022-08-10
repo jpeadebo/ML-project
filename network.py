@@ -110,6 +110,7 @@ class Network:
 
             layerBackError = dWeight.transpose().dot(self.errorMatrix[layer][0])
 
+            # weird rotation stuff cuz i dont understand numpy
             if layer == len(self.valueMatrix) - 1:
                 layerBackError = np.transpose(layerBackError)
 
